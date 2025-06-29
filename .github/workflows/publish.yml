@@ -2,25 +2,21 @@ name: Daily Sleep-Relaxation Video
 
 on:
   schedule:
-    - cron: '0 3 * * *'       # Runs daily at 03:00 UTC
-  workflow_dispatch:         # Allows manual triggering
-
-defaults:
-  run:
-    working-directory: sleep-relax-yt   # ← change to the subfolder where your scripts live
+    - cron: '0 3 * * *'     # every day at 03:00 UTC
+  workflow_dispatch:       # manual trigger
 
 jobs:
   publish:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install system dependencies
+      - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.10
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
@@ -42,7 +38,7 @@ jobs:
       - name: Prepare YouTube credentials
         run: |
           echo "${{ secrets.YT_CREDENTIALS }}" > credentials.json
-          echo "${{ secrets.YT_TOKEN }}"      > token.json
+          echo "${{ secrets.YT_TOKEN }}"       > token.json
 
       - name: Upload to YouTube
         id: upload
