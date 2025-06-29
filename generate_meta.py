@@ -1,23 +1,30 @@
+# generate_meta.py
+from openai import OpenAI
 import os
-import openai
 from dotenv import load_dotenv
 
-# Load your OpenAI API key from the .env file
+# Load environment variables (OPENAI_API_KEY, etc.)
 load_dotenv()
-openai.api_key = os.getenv('OPENAI_API_KEY')
 
-# Prompt for metadata
-prompt = (
-    "Generate a YouTube title, description with timestamps, "
-    "and 10 tags for an 8-hour rain sleep sounds video."
+# Instantiate new-style client
+client = OpenAI()
+
+# Your prompt for metadata
+template = (
+    "Generate a title and description for a soothing sleep/relaxation video. "
+    "Include relevant keywords and a call to action to subscribe."
 )
 
-# Call the API
-resp = openai.ChatCompletion.create(
-    model='gpt-3.5-turbo',
-    messages=[{'role':'user','content':prompt}]
+# Call the v1 API
+response = client.chat.completions.create(
+    model="gpt-3.5-turbo",
+    messages=[
+        {"role": "system", "content": "You are an expert at writing YouTube metadata."},
+        {"role": "user", "content": template},
+    ],
+    temperature=0.7,
 )
 
-# Write the output
-with open('meta.txt', 'w') as f:
-    f.write(resp.choices[0].message.content)
+# Print out the generated title & description
+print(response.choices[0].message.content)
+
