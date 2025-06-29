@@ -2,8 +2,8 @@ name: Daily Sleep-Relaxation Video
 
 on:
   schedule:
-    - cron: '0 3 * * *'       # Runs daily at 03:00 UTC
-  workflow_dispatch:         # Allows manual triggering
+    - cron: '0 3 * * *'       # daily at 03:00 UTC
+  workflow_dispatch:         # manual trigger
 
 jobs:
   publish:
@@ -14,66 +14,57 @@ jobs:
         working-directory: ${{ github.workspace }}
 
     steps:
-      # 1. Check out the code
-      - name: Checkout code
-        uses: actions/checkout@v4
+      # 1. Check out your code
+      - uses: actions/checkout@v4
 
-      # 2. Install system dependencies (FFmpeg)
+      # 2. Install system dependencies
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      # 3. Set up Python 3.10
-      - name: Set up Python
+      # 3. Set up Python
+      - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      # 4. Install and verify Python dependencies
-      - name: Install & verify Python dependencies
+      # 4. Install Python dependencies
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install moviepy imageio-ffmpeg openai google-auth-oauthlib \
-                      google-api-python-client tweepy python-dotenv
-          echo "=== INSTALLED PACKAGES ==="
-          pip show moviepy
-          pip show imageio-ffmpeg
-          echo
+          pip install moviepy imageio-ffmpeg openai \
+                      google-auth-oauthlib google-api-python-client \
+                      tweepy python-dotenv
 
-      # 5. Test MoviePy import and run make_video.py
+      # 5. Verify MoviePy is importable
+      - name: Test MoviePy import
+        run: python -c "import moviepy.editor; print('MoviePy version:', moviepy.editor.__version__)"
+
+      # 6. Generate video
       - name: Generate video
-        run: |
-          echo "=== PYTHON PATH ==="
-          which python
-          echo "=== MOVIEPY IMPORT TEST ==="
-          python - << 'EOF'
-import moviepy.editor
-print("MoviePy version:", moviepy.editor.__version__)
-EOF
-          echo "=== RUNNING make_video.py ==="
-          python make_video.py
+        run: python make_video.py
 
-      # 6. Generate metadata
+      # 7. Generate metadata
       - name: Generate metadata
         run: python generate_meta.py
 
-      # 7. Create thumbnail
+      # 8. Create thumbnail
       - name: Create thumbnail
         run: bash make_thumbnail.sh
 
-      # 8. Prepare YouTube credentials
+      # 9. Prepare YouTube credentials
       - name: Prepare YouTube credentials
         run: |
           echo "${{ secrets.YT_CREDENTIALS }}" > credentials.json
           echo "${{ secrets.YT_TOKEN }}"      > token.json
 
-      # 9. Upload to YouTube
+      # 10. Upload to YouTube
       - name: Upload to YouTube
         id: upload
         run: |
           VIDEO_ID=$(python upload.py)
           echo "video_id=$VIDEO_ID" >> $GITHUB_OUTPUT
 
-      # 10. Tweet the video link
+      # 11. Tweet video link
       - name: Tweet video link
         env:
           OPENAI_API_KEY:        ${{ secrets.OPENAI_API_KEY }}
