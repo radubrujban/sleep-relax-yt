@@ -2,8 +2,8 @@ name: Daily Sleep-Relaxation Video
 
 on:
   schedule:
-    - cron: '0 3 * * *'       # daily at 03:00 UTC
-  workflow_dispatch:         # manual trigger
+    - cron: '0 3 * * *'
+  workflow_dispatch:
 
 jobs:
   publish:
@@ -17,27 +17,30 @@ jobs:
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      # 3. Set up Python
+      # 3. Set up Python 3
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      # 4. Install & verify dependencies, then run make_video.py
+      # 4. Install & verify MoviePy using python3 -m pip
       - name: Install, verify, and generate video
         run: |
-          python -m pip install --upgrade pip setuptools wheel
-          pip install moviepy imageio-ffmpeg openai \
-                      google-auth-oauthlib google-api-python-client \
-                      tweepy python-dotenv
-          # Verify MoviePy import
-          python -c "import moviepy.editor; print('✅ MoviePy version:', moviepy.editor.__version__)"
-          # Run the video creation
-          python make_video.py
+          # Use python3 explicitly
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install moviepy imageio-ffmpeg openai \
+                                 google-auth-oauthlib google-api-python-client \
+                                 tweepy python-dotenv
+
+          # Verify with python3
+          python3 -c "import moviepy.editor; print('✅ MoviePy version:', moviepy.editor.__version__)"
+
+          # Generate the video
+          python3 make_video.py
 
       # 5. Generate metadata
       - name: Generate metadata
-        run: python generate_meta.py
+        run: python3 generate_meta.py
 
       # 6. Create thumbnail
       - name: Create thumbnail
@@ -53,10 +56,10 @@ jobs:
       - name: Upload to YouTube
         id: upload
         run: |
-          VIDEO_ID=$(python upload.py)
+          VIDEO_ID=$(python3 upload.py)
           echo "video_id=$VIDEO_ID" >> $GITHUB_OUTPUT
 
-      # 9. Tweet the video link
+      # 9. Tweet video link
       - name: Tweet video link
         env:
           OPENAI_API_KEY:        ${{ secrets.OPENAI_API_KEY }}
@@ -66,4 +69,4 @@ jobs:
           TWITTER_ACCESS_TOKEN:  ${{ secrets.TWITTER_ACCESS_TOKEN }}
           TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
           LAST_VIDEO_ID:         ${{ steps.upload.outputs.video_id }}
-        run: python post_twitter.py
+        run: python3 post_twitter.py
