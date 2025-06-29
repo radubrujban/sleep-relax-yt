@@ -2,41 +2,39 @@ name: Daily Sleep-Relaxation Video
 
 on:
   schedule:
-    - cron: '0 3 * * *'       # runs daily at 03:00 UTC
-  workflow_dispatch:         # allows manual triggering
+    - cron: '0 3 * * *'       # Runs daily at 03:00 UTC
+  workflow_dispatch:         # Adds the “Run workflow” button
 
 jobs:
   publish:
     runs-on: ubuntu-latest
 
-    steps:
-      # 1. Checkout your code (into /home/runner/work/sleep-relax-yt/sleep-relax-yt)
-      - name: Checkout code
-        uses: actions/checkout@v4
+    # Apply this working-directory to every run: step
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}
 
-      # 2. Install system-wide dependencies (ffmpeg)
+    steps:
+      # 1. Checkout repository (always at the top)
+      - uses: actions/checkout@v4
+
+      # 2. Install system dependencies
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-    # All run: steps after this default to the checkout directory
-    defaults:
-      run:
-        working-directory: ${{ github.workspace }}  # this is the inner 'sleep-relax-yt' folder
-
-    steps:
       # 3. Set up Python
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      # 4. Install Python dependencies
+      # 4. Install Python packages
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
 
-      # 5. Generate the video
+      # 5. Generate video
       - name: Generate video
         run: python make_video.py
 
@@ -44,7 +42,7 @@ jobs:
       - name: Generate metadata
         run: python generate_meta.py
 
-      # 7. Create the thumbnail
+      # 7. Create thumbnail
       - name: Create thumbnail
         run: bash make_thumbnail.sh
 
