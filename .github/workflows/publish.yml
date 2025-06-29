@@ -9,58 +9,59 @@ jobs:
   publish:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: ${{ github.workspace }}
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      # 1. Checkout code
+      - uses: actions/checkout@v4
 
+      # 2. Install FFmpeg
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      - name: Set up Python
+      # 3. Set up Python
+      - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
+      # 4. Install MoviePy and all deps
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          # Force-reinstall to ensure presence
-          pip install --force-reinstall moviepy imageio-ffmpeg openai \
-                                 google-auth-oauthlib google-api-python-client \
-                                 tweepy python-dotenv
+          pip install moviepy imageio-ffmpeg openai \
+                      google-auth-oauthlib google-api-python-client \
+                      tweepy python-dotenv
 
-      - name: Debug installed packages
-        run: |
-          echo "Python at: $(which python)"
-          pip show moviepy || echo "moviepy not found"
-          pip show imageio-ffmpeg || echo "imageio-ffmpeg not found"
-          pip list
+      # 5. Verify MoviePy
+      - name: Test MoviePy import
+        run: python -c "import moviepy.editor; print('MoviePy OK:', moviepy.editor.__version__)"
 
+      # 6. Generate video
       - name: Generate video
-        run: python make_video.py
+        run: python ./make_video.py
 
+      # 7. Generate metadata
       - name: Generate metadata
-        run: python generate_meta.py
+        run: python ./generate_meta.py
 
+      # 8. Create thumbnail
       - name: Create thumbnail
-        run: bash make_thumbnail.sh
+        run: bash ./make_thumbnail.sh
 
+      # 9. Prepare YouTube credentials
       - name: Prepare YouTube credentials
         run: |
           echo "${{ secrets.YT_CREDENTIALS }}" > credentials.json
           echo "${{ secrets.YT_TOKEN }}"      > token.json
 
+      # 10. Upload to YouTube
       - name: Upload to YouTube
         id: upload
         run: |
-          VIDEO_ID=$(python upload.py)
+          VIDEO_ID=$(python ./upload.py)
           echo "video_id=$VIDEO_ID" >> $GITHUB_OUTPUT
 
-      - name: Tweet video link
+      # 11. Tweet the video link
+      - name: Tweet the video link
         env:
           OPENAI_API_KEY:        ${{ secrets.OPENAI_API_KEY }}
           TWITTER_BEARER_TOKEN:  ${{ secrets.TWITTER_BEARER_TOKEN }}
@@ -69,4 +70,4 @@ jobs:
           TWITTER_ACCESS_TOKEN:  ${{ secrets.TWITTER_ACCESS_TOKEN }}
           TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
           LAST_VIDEO_ID:         ${{ steps.upload.outputs.video_id }}
-        run: python post_twitter.py
+        run: python ./post_twitter.py
