@@ -2,8 +2,8 @@ name: Daily Sleep-Relaxation Video
 
 on:
   schedule:
-    - cron: '0 3 * * *'
-  workflow_dispatch:
+    - cron: '0 3 * * *'       # daily at 03:00 UTC
+  workflow_dispatch:         # manual trigger
 
 jobs:
   publish:
@@ -13,53 +13,55 @@ jobs:
       # 1. Checkout code
       - uses: actions/checkout@v4
 
-      # 2. Install FFmpeg
+      # 2. Install system FFmpeg
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      # 3. Set up Python 3
+      # 3. Set up Python 3.10
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      # 4. Install & verify MoviePy using python3 -m pip
-      - name: Install, verify, and generate video
+      # 4. Install all Python deps with python3
+      - name: Install Python dependencies
         run: |
-          # Use python3 explicitly
           python3 -m pip install --upgrade pip setuptools wheel
-          python3 -m pip install moviepy imageio-ffmpeg openai \
-                                 google-auth-oauthlib google-api-python-client \
-                                 tweepy python-dotenv
+          python3 -m pip install \
+            moviepy imageio-ffmpeg \
+            openai google-auth-oauthlib google-api-python-client \
+            tweepy python-dotenv
 
-          # Verify with python3
-          python3 -c "import moviepy.editor; print('✅ MoviePy version:', moviepy.editor.__version__)"
+      # 5. Verify MoviePy import with python3
+      - name: Verify MoviePy
+        run: python3 -c "import moviepy.editor; print('✅ MoviePy version:', moviepy.editor.__version__)"
 
-          # Generate the video
-          python3 make_video.py
+      # 6. Generate the video
+      - name: Generate video
+        run: python3 make_video.py
 
-      # 5. Generate metadata
+      # 7. Generate metadata
       - name: Generate metadata
         run: python3 generate_meta.py
 
-      # 6. Create thumbnail
+      # 8. Create thumbnail
       - name: Create thumbnail
         run: bash make_thumbnail.sh
 
-      # 7. Prepare YouTube credentials
+      # 9. Prepare YouTube credentials
       - name: Prepare YouTube credentials
         run: |
           echo "${{ secrets.YT_CREDENTIALS }}" > credentials.json
           echo "${{ secrets.YT_TOKEN }}"      > token.json
 
-      # 8. Upload to YouTube
+      # 10. Upload to YouTube
       - name: Upload to YouTube
         id: upload
         run: |
           VIDEO_ID=$(python3 upload.py)
           echo "video_id=$VIDEO_ID" >> $GITHUB_OUTPUT
 
-      # 9. Tweet video link
+      # 11. Tweet the video link
       - name: Tweet video link
         env:
           OPENAI_API_KEY:        ${{ secrets.OPENAI_API_KEY }}
