@@ -31,9 +31,12 @@ jobs:
 
       # 4. Install Python dependencies
       - name: Install Python dependencies
+        working-directory: ${{ github.workspace }}
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install -r requirements.txt
+          # Install MoviePy and its ffmpeg backend, plus the rest of your deps
+          pip install moviepy imageio-ffmpeg openai google-auth-oauthlib \
+                      google-api-python-client tweepy python-dotenv
 
       # 5. Generate the video
       - name: Generate video
