@@ -2,50 +2,66 @@ name: Daily Sleep-Relaxation Video
 
 on:
   schedule:
-    - cron: '0 3 * * *'     # every day at 03:00 UTC
-  workflow_dispatch:       # manual trigger
+    - cron: '0 3 * * *'       # runs daily at 03:00 UTC
+  workflow_dispatch:         # allows manual triggering
 
 jobs:
   publish:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
-
+      # 1. Checkout your code (into /home/runner/work/sleep-relax-yt/sleep-relax-yt)
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      # 2. Install system-wide dependencies (ffmpeg)
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+    # All run: steps after this default to the checkout directory
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}  # this is the inner 'sleep-relax-yt' folder
+
+    steps:
+      # 3. Set up Python
+      - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
+      # 4. Install Python dependencies
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
 
+      # 5. Generate the video
       - name: Generate video
         run: python make_video.py
 
+      # 6. Generate metadata
       - name: Generate metadata
         run: python generate_meta.py
 
+      # 7. Create the thumbnail
       - name: Create thumbnail
         run: bash make_thumbnail.sh
 
+      # 8. Prepare YouTube credentials
       - name: Prepare YouTube credentials
         run: |
           echo "${{ secrets.YT_CREDENTIALS }}" > credentials.json
-          echo "${{ secrets.YT_TOKEN }}"       > token.json
+          echo "${{ secrets.YT_TOKEN }}"      > token.json
 
+      # 9. Upload to YouTube
       - name: Upload to YouTube
         id: upload
         run: |
           VIDEO_ID=$(python upload.py)
           echo "video_id=$VIDEO_ID" >> $GITHUB_OUTPUT
 
+      # 10. Tweet the video link
       - name: Tweet video link
         env:
           OPENAI_API_KEY:        ${{ secrets.OPENAI_API_KEY }}
