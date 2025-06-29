@@ -1,4 +1,6 @@
 # generate_meta.py
+from dotenv import load_dotenv
+load_dotenv()
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
