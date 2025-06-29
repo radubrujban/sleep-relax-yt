@@ -2,8 +2,8 @@ name: Daily Sleep-Relaxation Video
 
 on:
   schedule:
-    - cron: '0 3 * * *'
-  workflow_dispatch:
+    - cron: '0 3 * * *'       # daily at 03:00 UTC
+  workflow_dispatch:         # manual trigger
 
 jobs:
   publish:
@@ -13,34 +13,26 @@ jobs:
       # 1. Checkout code
       - uses: actions/checkout@v4
 
-      # 2. Install system-level FFmpeg
+      # 2. Install FFmpeg
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       # 3. Set up Python
-      - name: Set up Python 3.10
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      # 4. Install MoviePy and run the video generator in one shot
-      - name: Install, test, & run video creation
+      # 4. Install & verify dependencies, then run make_video.py
+      - name: Install, verify, and generate video
         run: |
-          # 4.1 Update pip
           python -m pip install --upgrade pip setuptools wheel
-
-          # 4.2 Install MoviePy + all other deps
           pip install moviepy imageio-ffmpeg openai \
                       google-auth-oauthlib google-api-python-client \
                       tweepy python-dotenv
-
-          # 4.3 Verify we can import MoviePy
-          python - << 'EOF'
-import moviepy.editor
-print("✅ MoviePy version:", moviepy.editor.__version__)
-EOF
-
-          # 4.4 Run the actual video build
+          # Verify MoviePy import
+          python -c "import moviepy.editor; print('✅ MoviePy version:', moviepy.editor.__version__)"
+          # Run the video creation
           python make_video.py
 
       # 5. Generate metadata
