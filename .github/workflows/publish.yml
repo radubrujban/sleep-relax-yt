@@ -13,7 +13,7 @@ jobs:
       # 1. Checkout code
       - uses: actions/checkout@v4
 
-      # 2. Install FFmpeg
+      # 2. Install system-level FFmpeg
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
@@ -23,45 +23,49 @@ jobs:
         with:
           python-version: '3.10'
 
-      # 4. Install MoviePy and all deps
-      - name: Install Python dependencies
+      # 4. Install MoviePy and run the video generator in one shot
+      - name: Install, test, & run video creation
         run: |
+          # 4.1 Update pip
           python -m pip install --upgrade pip setuptools wheel
+
+          # 4.2 Install MoviePy + all other deps
           pip install moviepy imageio-ffmpeg openai \
                       google-auth-oauthlib google-api-python-client \
                       tweepy python-dotenv
 
-      # 5. Verify MoviePy
-      - name: Test MoviePy import
-        run: python -c "import moviepy.editor; print('MoviePy OK:', moviepy.editor.__version__)"
+          # 4.3 Verify we can import MoviePy
+          python - << 'EOF'
+import moviepy.editor
+print("✅ MoviePy version:", moviepy.editor.__version__)
+EOF
 
-      # 6. Generate video
-      - name: Generate video
-        run: python ./make_video.py
+          # 4.4 Run the actual video build
+          python make_video.py
 
-      # 7. Generate metadata
+      # 5. Generate metadata
       - name: Generate metadata
-        run: python ./generate_meta.py
+        run: python generate_meta.py
 
-      # 8. Create thumbnail
+      # 6. Create thumbnail
       - name: Create thumbnail
-        run: bash ./make_thumbnail.sh
+        run: bash make_thumbnail.sh
 
-      # 9. Prepare YouTube credentials
+      # 7. Prepare YouTube credentials
       - name: Prepare YouTube credentials
         run: |
           echo "${{ secrets.YT_CREDENTIALS }}" > credentials.json
           echo "${{ secrets.YT_TOKEN }}"      > token.json
 
-      # 10. Upload to YouTube
+      # 8. Upload to YouTube
       - name: Upload to YouTube
         id: upload
         run: |
-          VIDEO_ID=$(python ./upload.py)
+          VIDEO_ID=$(python upload.py)
           echo "video_id=$VIDEO_ID" >> $GITHUB_OUTPUT
 
-      # 11. Tweet the video link
-      - name: Tweet the video link
+      # 9. Tweet the video link
+      - name: Tweet video link
         env:
           OPENAI_API_KEY:        ${{ secrets.OPENAI_API_KEY }}
           TWITTER_BEARER_TOKEN:  ${{ secrets.TWITTER_BEARER_TOKEN }}
@@ -70,4 +74,4 @@ jobs:
           TWITTER_ACCESS_TOKEN:  ${{ secrets.TWITTER_ACCESS_TOKEN }}
           TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
           LAST_VIDEO_ID:         ${{ steps.upload.outputs.video_id }}
-        run: python ./post_twitter.py
+        run: python post_twitter.py
