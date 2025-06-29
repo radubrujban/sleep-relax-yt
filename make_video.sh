@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 set -e
-cd ~/sleep-relax-yt
-cat > make_video.sh << 'EOF'
-#!/usr/bin/env bash
-set -e
 
 # Duration: 8 hours in seconds
 DURATION=$((8*3600))
