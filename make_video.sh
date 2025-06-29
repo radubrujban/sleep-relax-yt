@@ -16,7 +16,7 @@ fi
 # If no audio files exist, generate 10-second silent audio placeholder
 if [ -z "$(ls audio 2>/dev/null)" ]; then
   ffmpeg -y -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
-    -t 10 -c:a aac audio/sample.mp3
+    -t 10 -c:a libmp3lame audio/sample.mp3
 fi
 
 # Now loop & combine to the full DURATION
