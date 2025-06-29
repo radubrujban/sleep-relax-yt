@@ -2,8 +2,12 @@ name: Daily Sleep-Relaxation Video
 
 on:
   schedule:
-    - cron: '0 3 * * *'
-  workflow_dispatch:
+    - cron: '0 3 * * *'       # Runs daily at 03:00 UTC
+  workflow_dispatch:         # Allows manual triggering
+
+defaults:
+  run:
+    working-directory: sleep-relax-yt   # ← change to the subfolder where your scripts live
 
 jobs:
   publish:
